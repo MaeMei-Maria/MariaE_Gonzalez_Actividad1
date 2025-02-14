@@ -5,10 +5,12 @@ using UnityEngine;
 public class ControlDron : MonoBehaviour
 {
     private CharacterController controller;
+
+    [SerializeField] private float pushPower = 2f;
+
+    [Header("Movement")]
     private Vector3 dronVelocity;
-
     private Vector3 currentVelocity;
-
     [SerializeField] private float acceleration = 2f;
     [SerializeField] private float dronForwardVelocity = 3f;
     [SerializeField] private float dronVerticalVelocity = 3f;
@@ -73,5 +75,29 @@ public class ControlDron : MonoBehaviour
         float rotationInput = Input.GetAxis("Horizontal") * dronRotationVelocity * Time.deltaTime;
 
         transform.Rotate(0, rotationInput, 0);
+    }
+
+    //Empujar objetos dinámicos.
+    private void OnControllerColliderHit(ControllerColliderHit hit)
+    {
+        Rigidbody body = hit.collider.attachedRigidbody;
+
+        //No tiene Rigidbody o es Kinemático
+        if(body == null || body.isKinematic)
+        {
+            return;
+        }
+
+        //Para evitar empujar un objeto que está por debajo
+        if(hit.moveDirection.y < -0.3)
+        {
+            return;
+        }
+
+        //Calcular la dirección de empuje hacia los lados.
+        Vector3 pushDir = new Vector3(hit.moveDirection.x, 0, hit.moveDirection.z);
+
+        //Aplicar el empuje.
+        body.AddForce(pushDir * pushPower, ForceMode.Impulse);
     }
 }
