@@ -12,10 +12,14 @@ public class ControlDron : MonoBehaviour
     private Vector3 dronVelocity;
     private Vector3 currentVelocity;
     [SerializeField] private float acceleration = 2f;
-    [SerializeField] private float dronForwardVelocity = 3f;
-    [SerializeField] private float dronVerticalVelocity = 3f;
     [SerializeField] private float dronRotationVelocity = 10f;
     [SerializeField] private float maxDronVelocity = 7f;
+
+    [Header("Fall")]
+    private float gravity = 9.8f;
+    private bool isFalling = false; //Indica si se chocó con algo por arriba.
+    private float fallTimer = 0f;
+    private float maxFallTime = 1f;
 
     void Start()
     {
@@ -24,9 +28,20 @@ public class ControlDron : MonoBehaviour
 
     void Update()
     {
-        UpdateDronVelocity();
-        UpdateDronRotation();
-        ApplyVelocity();
+        // Verifica si el dron sigue en el aire (no tocando el suelo)
+        if(isFalling)
+        {
+            DronIsFalling();
+        }
+        else
+        {
+            UpdateDronVelocity();
+            UpdateDronRotation();
+            ApplyVelocity();
+        }
+
+        Debug.Log("Grounded: " + controller.isGrounded);
+        Debug.Log("IsFalling: " + isFalling);
     }
 
     void ApplyVelocity()
@@ -56,7 +71,7 @@ public class ControlDron : MonoBehaviour
         //Se combinan los inputs y se normaliza
         Vector3 desiredVelocity = new Vector3(0, yInput, zInput);
         
-        if(desiredVelocity.magnitude > 1)
+        if(desiredVelocity.sqrMagnitude > 1)
         {
             desiredVelocity.Normalize();
         }
@@ -80,16 +95,68 @@ public class ControlDron : MonoBehaviour
     //Empujar objetos dinámicos.
     private void OnControllerColliderHit(ControllerColliderHit hit)
     {
+        ApplyForce(hit);
+
+        // Detectar colisión con un techo (comprobando si el punto de impacto está arriba del dron)
+        if (controller.collisionFlags == CollisionFlags.Above)
+        {
+            StartFalling();
+        }
+
+        if (controller.isGrounded && isFalling)
+        {
+            Debug.Log("Drone tocó el suelo, deteniendo la caída.");
+            StopFalling();
+        }
+    }
+
+    void StartFalling()
+    {
+        isFalling = true;
+        fallTimer = 0;
+        dronVelocity = Vector3.zero;
+    }
+
+    void DronIsFalling()
+    {
+        fallTimer += Time.deltaTime;
+
+        // Aplica gravedad solo si el dron está en el aire
+        if (!controller.isGrounded)
+        {
+            dronVelocity.y -= gravity * Time.deltaTime; // Aplica gravedad
+        }
+
+        controller.Move(dronVelocity * Time.deltaTime);
+
+        if (controller.isGrounded || fallTimer >= maxFallTime)
+        {
+            StopFalling();
+        }
+    }
+
+    // Detiene la caída y el movimiento del dron
+    private void StopFalling()
+    {
+        dronVelocity = Vector3.zero;
+        currentVelocity = Vector3.zero;
+
+        isFalling = false;  // Detiene la caída
+        fallTimer = 0f;      // Reinicia el tiempo de caída
+    }
+
+    private void ApplyForce(ControllerColliderHit hit)
+    {
         Rigidbody body = hit.collider.attachedRigidbody;
 
         //No tiene Rigidbody o es Kinemático
-        if(body == null || body.isKinematic)
+        if (body == null || body.isKinematic)
         {
             return;
         }
 
         //Para evitar empujar un objeto que está por debajo
-        if(hit.moveDirection.y < -0.3)
+        if (hit.moveDirection.y < -0.3)
         {
             return;
         }
