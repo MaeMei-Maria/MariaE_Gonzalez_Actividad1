@@ -137,7 +137,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 1892464817819448257, guid: a4536bd9ae2ec8f4aabd06b3b943211a, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -3.66
+      value: 5.68
       objectReference: {fileID: 0}
     - target: {fileID: 1892464817819448257, guid: a4536bd9ae2ec8f4aabd06b3b943211a, type: 3}
       propertyPath: m_LocalPosition.y
@@ -178,6 +178,42 @@ PrefabInstance:
     - target: {fileID: 6114105694490032910, guid: a4536bd9ae2ec8f4aabd06b3b943211a, type: 3}
       propertyPath: m_Name
       value: Player
+      objectReference: {fileID: 0}
+    - target: {fileID: 7336606640406955999, guid: a4536bd9ae2ec8f4aabd06b3b943211a, type: 3}
+      propertyPath: slideSlope
+      value: 35
+      objectReference: {fileID: 0}
+    - target: {fileID: 7336606640406955999, guid: a4536bd9ae2ec8f4aabd06b3b943211a, type: 3}
+      propertyPath: slideSpeed
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 7336606640406955999, guid: a4536bd9ae2ec8f4aabd06b3b943211a, type: 3}
+      propertyPath: normalSpeed
+      value: 1.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 7336606640406955999, guid: a4536bd9ae2ec8f4aabd06b3b943211a, type: 3}
+      propertyPath: maxSlideVelocity
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 7336606640406955999, guid: a4536bd9ae2ec8f4aabd06b3b943211a, type: 3}
+      propertyPath: slideSlowCurve.m_Curve.Array.size
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 7336606640406955999, guid: a4536bd9ae2ec8f4aabd06b3b943211a, type: 3}
+      propertyPath: slideSlowCurve.m_Curve.Array.data[0].time
+      value: -0.0000019073486
+      objectReference: {fileID: 0}
+    - target: {fileID: 7336606640406955999, guid: a4536bd9ae2ec8f4aabd06b3b943211a, type: 3}
+      propertyPath: slideSlowCurve.m_Curve.Array.data[1].time
+      value: 0.9994507
+      objectReference: {fileID: 0}
+    - target: {fileID: 7336606640406955999, guid: a4536bd9ae2ec8f4aabd06b3b943211a, type: 3}
+      propertyPath: slideSlowCurve.m_Curve.Array.data[0].value
+      value: 0.99998856
+      objectReference: {fileID: 0}
+    - target: {fileID: 7336606640406955999, guid: a4536bd9ae2ec8f4aabd06b3b943211a, type: 3}
+      propertyPath: slideSlowCurve.m_Curve.Array.data[1].value
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -1605,6 +1641,10 @@ PrefabInstance:
     - target: {fileID: 7101658046410816522, guid: 7d0923aa2c7c24e41b99a146e3552742, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7342949665334103511, guid: 7d0923aa2c7c24e41b99a146e3552742, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.45
       objectReference: {fileID: 0}
     - target: {fileID: 7406587162955828531, guid: 7d0923aa2c7c24e41b99a146e3552742, type: 3}
       propertyPath: m_Mesh
