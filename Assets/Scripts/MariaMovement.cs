@@ -26,14 +26,26 @@ public class MariaMovement : MonoBehaviour
     [SerializeField] private float crouchCenter = 0.4f; // Centro de la cápsula cuando está agachado.
     [SerializeField] private float standCenter = 0.5f; // Centro de la cápsula cuando está de pie.
 
+    [Header("Dash")]
+    [SerializeField] private float dashSpeed = 8f;
+    [SerializeField] private float dashDuration = 2f;
+    [SerializeField] private float dashEndSpeed = 1f;
+
     private Vector3 playerVelocity;
     private Vector3 slideVelocity;
+    private float gravity = -9.8f;
+    private float verticalSpeed;
     private float currentSpeed; // Variable para suavizar la transición de velocidad
     private float slidenTime = 0f;
     private float slideVelocityFactor = 1f;
     private bool sliding = false;
     private bool isCrouched = false;
+    private bool tryingToStand = false;
+    private Vector3 dashDirection;
+    private bool isDashing = false;
+    private float dashTime = 0f;
 
+    //Variables de números enteros
     private static readonly int ZSpeed = Animator.StringToHash("zSpeed");
     private static readonly int XSpeed = Animator.StringToHash("xSpeed");
     private static readonly int Crouched = Animator.StringToHash("crouched");
@@ -46,18 +58,33 @@ public class MariaMovement : MonoBehaviour
 
     void Update()
     {
-        UpdatePlayerVelocity();
-        UpdateSlideVelocity();
-        HandleCrouch();
+        if (isDashing)
+        {
+            HandleDash();
+        }
+        else
+        {
+            UpdatePlayerVelocity();
+            UpdateVerticalSpeed();
+            UpdateSlideVelocity();
+            HandleCrouch();
 
-        ApplyVelocity();
+            if (tryingToStand)
+            {
+                TryStandUp();
+            }
+
+            ApplyVelocity();
+        }
+
+
+        StartDash();
     }
 
     void ApplyVelocity()
     {
-        Vector3 totalVelocity = playerVelocity * slideVelocityFactor + slideVelocity;
-
-        ch_Controller.SimpleMove(totalVelocity);
+        Vector3 totalVelocity = (playerVelocity + slideVelocity) * slideVelocityFactor + Vector3.up * verticalSpeed;
+        ch_Controller.Move(totalVelocity * Time.deltaTime);
     }
 
     void HandleCrouch()
@@ -70,7 +97,7 @@ public class MariaMovement : MonoBehaviour
         // Levantarse si se suelta la tecla
         else if (Input.GetKeyUp(KeyCode.LeftControl) && isCrouched)
         {
-            TryStandUp();
+            tryingToStand = true;
         }
     }
 
@@ -82,14 +109,21 @@ public class MariaMovement : MonoBehaviour
 
         //Se combinan los inputs y se normaliza el vector creado.
         Vector3 input = new Vector3(xInput, 0, zInput);
-        if (input.sqrMagnitude < 1)
+        if (input.magnitude < 1)
         {
             input.Normalize();
         }
 
-        //Interpolar para caminar y correr.
-        float targetSpeed = Input.GetKey(KeyCode.LeftShift) && !isCrouched ? runSpeed : normalSpeed; //Si presiona Shift y no está agachado se usa la velocidad para correr sino usa la velociad normal.
-        currentSpeed = Mathf.Lerp(currentSpeed, targetSpeed, Time.deltaTime * 5); //Suaviza el cambio de velocidad gradualmente..
+        if(isCrouched)
+        {
+            currentSpeed = crouchSpeed;
+        }
+        else
+        {
+            //Interpolar para caminar y correr.
+            float targetSpeed = Input.GetKey(KeyCode.LeftShift) && !isCrouched ? runSpeed : normalSpeed; //Si presiona Shift y no está agachado se usa la velocidad para correr sino usa la velociad normal.
+            currentSpeed = Mathf.Lerp(currentSpeed, targetSpeed, Time.deltaTime * 5); //Suaviza el cambio de velocidad gradualmente.
+        }
 
         //Cálculo de la velocidad.
         Vector3 localPlayerVelocity = new Vector3(input.x * currentSpeed, 0, input.z * currentSpeed);
@@ -101,21 +135,36 @@ public class MariaMovement : MonoBehaviour
         animator.SetFloat(XSpeed, localPlayerVelocity.x);
     }
 
+    void UpdateVerticalSpeed()
+    {
+        if (ch_Controller.isGrounded)
+        {
+            verticalSpeed = -1f; // Mantener un valor bajo en el suelo para evitar microflotaciones
+        }
+        else
+        {
+            verticalSpeed += gravity * Time.deltaTime;
+        }
+    }
+
     void UpdateSlideVelocity()
     {
         Vector3 maxSlideVelocity = Vector3.zero;
 
         RaycastHit hitInfo;
 
-        if (ch_Controller.isGrounded && Physics.SphereCast(transform.position + ch_Controller.center, ch_Controller.radius, Vector3.down, out hitInfo))
+        if (ch_Controller.isGrounded && Physics.Raycast(transform.position, Vector3.down, out hitInfo, ch_Controller.height))
         {
             float angle = Vector3.Angle(hitInfo.normal, Vector3.up); //Ángulo entre la normal del HitInfo y el Vector.up.
+            Debug.Log($"Ángulo de la pendiente: {angle}");
 
-            if(angle > slideSlope)
+            if (angle > slideSlope)
             {
                 sliding = true;
 
                 Vector3 slideDirection = Vector3.ProjectOnPlane(Vector3.down, hitInfo.normal).normalized; //Dirección del slide proyectado en un plano.
+                
+                //REVISAR YA QUE NO SE CAE POR LA PENDIENTE
                 maxSlideVelocity = slideDirection * slideSpeed;
 
                 Debug.DrawRay(hitInfo.point, hitInfo.normal, Color.red, 3);
@@ -155,38 +204,54 @@ public class MariaMovement : MonoBehaviour
 
     void StartCrouch()
     {
-        // Iniciar agachado: Cambiar altura y centro de la cápsula.
         isCrouched = true;
-
-        ch_Controller.height = Mathf.MoveTowards(ch_Controller.height, crouchHeight, 1 * Time.deltaTime);
-        ch_Controller.center = new Vector3(0, Mathf.MoveTowards(ch_Controller.center.y, crouchCenter, 1 * Time.deltaTime), 0);
-
-        currentSpeed = crouchSpeed;
-
-        // Cambiar la animación
+        ch_Controller.height = crouchHeight;
+        ch_Controller.center = new Vector3(0, crouchCenter, 0);
         animator.SetBool(Crouched, true);
+        tryingToStand = false;
     }
 
     void TryStandUp()
     {
-        RaycastHit hitInfo;
-
-        // Realizar SphereCast hacia arriba para verificar si hay obstáculos.
-        if (!Physics.SphereCast(transform.position + ch_Controller.center, ch_Controller.radius, Vector3.up, out hitInfo, 2f))
+        if (CanStandUp())
         {
-            // Si no hay obstáculos, el personaje puede levantarse.
             StandUp();
+            tryingToStand = false;
         }
+    }
+
+    private bool CanStandUp()
+    {
+        RaycastHit hitInfo;
+        
+        return !Physics.SphereCast(transform.position + ch_Controller.center, ch_Controller.radius, Vector3.up, out hitInfo, 2f);
     }
 
     void StandUp()
     {
-        // Iniciar levantamiento: Cambiar altura y centro de la cápsula.
-        ch_Controller.height = Mathf.MoveTowards(ch_Controller.height, standHeight, crouchSpeed * Time.deltaTime);
-        ch_Controller.center = new Vector3(0, Mathf.MoveTowards(ch_Controller.center.y, standCenter, crouchSpeed * Time.deltaTime), 0);
-
-        // Cambiar la animación
+        ch_Controller.height = standHeight;
+        ch_Controller.center = new Vector3(0, standCenter, 0);
         animator.SetBool(Crouched, false);
         isCrouched = false;
+    }
+
+    void StartDash()
+    {
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            isDashing = true; // Activamos el estado de dash
+            dashTime = 0; // Reiniciamos el temporizador del dash
+
+            // Si el jugador se estaba moviendo, usamos su dirección normalizada.
+            // Si no se estaba moviendo, usamos transform.forward como dirección por defecto.
+            dashDirection = playerVelocity.sqrMagnitude > 0 ? playerVelocity.normalized : transform.forward;
+        }
+    }
+
+    void HandleDash()
+    {
+        dashTime += Time.deltaTime; // Aumentamos el tiempo transcurrido en el dash
+        ch_Controller.Move(dashDirection * dashSpeed * Time.deltaTime); // Movemos al jugador en la dirección del dash
+        if (dashTime >= dashDuration) isDashing = false; // Terminamos el dash cuando se cumple el tiempo
     }
 }
