@@ -39,9 +39,6 @@ public class ControlDron : MonoBehaviour
             UpdateDronRotation();
             ApplyVelocity();
         }
-
-        Debug.Log("Grounded: " + controller.isGrounded);
-        Debug.Log("IsFalling: " + isFalling);
     }
 
     void ApplyVelocity()
@@ -105,7 +102,6 @@ public class ControlDron : MonoBehaviour
 
         if (controller.isGrounded && isFalling)
         {
-            Debug.Log("Drone tocó el suelo, deteniendo la caída.");
             StopFalling();
         }
     }
