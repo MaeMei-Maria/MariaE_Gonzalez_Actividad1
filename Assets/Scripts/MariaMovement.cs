@@ -12,6 +12,10 @@ public class MariaMovement : MonoBehaviour
     [SerializeField] private float normalSpeed = 1.5f;
     [SerializeField] private float runSpeed = 3.5f;
 
+    [Header("Jump")]
+    [SerializeField] private float jumpForce = 5f;
+    [SerializeField] private float jumpRayDistance = 3f;
+
     [Header("Slide")]
     [SerializeField] private AnimationCurve slideSlowCurve;
     [SerializeField] private float slideSlope = 4f;
@@ -156,7 +160,6 @@ public class MariaMovement : MonoBehaviour
         if (ch_Controller.isGrounded && Physics.Raycast(transform.position, Vector3.down, out hitInfo, ch_Controller.height))
         {
             float angle = Vector3.Angle(hitInfo.normal, Vector3.up); //Ángulo entre la normal del HitInfo y el Vector.up.
-            Debug.Log($"Ángulo de la pendiente: {angle}");
 
             if (angle > slideSlope)
             {
